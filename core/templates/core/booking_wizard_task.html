@@ -1,0 +1,97 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block content %}
+<form method="post">
+  {% csrf_token %}
+  {{ wizard.management_form }}
+  <div class="container my-5">
+    <div class="card booking-card modern-card shadow-lg">
+      <!-- Card Header -->
+      <div class="card-header text-center py-4" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff;">
+        <h2 class="mb-1 fw-bold">Select Service Task</h2>
+        <small class="text-light">Step 1 of 3</small>
+      </div>
+      <!-- Card Body -->
+      <div class="card-body">
+        <div class="row g-4">
+          <!-- Task Selection Column -->
+          <div class="col-lg-7 pe-lg-4">
+            <div class="mb-4">
+              <h4 class="mb-3">Available Tasks</h4>
+              <div id="taskButtons" class="d-flex flex-wrap gap-3">
+                {% for value, label in form.task.field.choices %}
+                  <button type="button" class="btn btn-outline-primary task-btn rounded-pill px-4 py-2" data-task="{{ value }}">
+                    {{ label }}
+                  </button>
+                {% empty %}
+                  <p class="text-muted">No tasks available for this provider.</p>
+                {% endfor %}
+              </div>
+              {{ form.task }}
+            </div>
+          </div>
+          <!-- Provider Info Column -->
+          <div class="col-lg-5 border-start ps-lg-4">
+            <div class="provider-info bg-light rounded-3 p-4">
+              <div class="text-center mb-4">
+                {% if provider.profile_image and provider.profile_image.name != 'default_profile.png' %}
+                  <img src="{{ provider.profile_image.url }}" class="rounded-circle img-fluid border shadow-sm mb-3" alt="{{ provider_first_name }}" style="width: 120px; height: 120px; object-fit: cover;">
+                  {% else %}
+                  <img src="{% static 'core/images/default_profile.png' %}" 
+                       class="rounded-circle img-fluid border shadow-sm mb-3" 
+                       alt="{{ provider.user.username }} (default)"
+                       style="width: 120px; height: 120px; object-fit: cover;">
+                {% endif %}
+                
+                <h4 class="mb-2">{{ provider_first_name }}</h4>
+                <div class="d-flex justify-content-center gap-2 mb-3">
+                  <span class="badge bg-info"><i class="fas fa-star me-1"></i>{{ provider.rating }}/5</span>
+                  <span class="badge bg-success"><i class="fas fa-briefcase me-1"></i>{{ provider.completed_jobs }} jobs</span>
+                </div>
+              </div>
+              <!-- Provider Meta using Bootstrap grid rows for alignment -->
+              <div class="provider-meta">
+                <div class="row mb-2">
+                  <div class="col-5 text-end fw-medium">Category:</div>
+                  <div class="col-7">{{ service_category }}</div>
+                </div>
+                <div class="row mb-2">
+                  <div class="col-5 text-end fw-medium">Experience:</div>
+                  <div class="col-7">{{ provider.years_of_experience }} years</div>
+                </div>
+                <div class="row">
+                  <div class="col-5 text-end fw-medium">Location:</div>
+                  <div class="col-7">{{ provider.city }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- End Provider Info Column -->
+        </div>
+      </div>
+      <!-- Card Footer -->
+      <div class="card-footer bg-transparent border-top-0 py-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <a href="{% url 'service_providers' service_category 'all' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Back to Providers
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const taskButtons = document.querySelectorAll(".task-btn");
+  taskButtons.forEach(btn => {
+    btn.addEventListener("click", function() {
+      taskButtons.forEach(b => b.classList.remove("active"));
+      this.classList.add("active");
+      document.getElementById("id_task").value = this.dataset.task;
+      setTimeout(() => document.querySelector("form").submit(), 300);
+    });
+  });
+});
+</script>
+{% endblock %}

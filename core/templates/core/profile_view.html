@@ -1,0 +1,93 @@
+{% extends 'core/base.html' %}
+{% load static review_extras %}
+{% block content %}
+<div class="container my-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white text-center">
+          <h3 class="mb-0">My Profile</h3>
+        </div>
+        <div class="card-body">
+          <div class="row align-items-center mb-4">
+            <!-- Profile Picture Column -->
+            <div class="col-md-4 text-center">
+              {% if profile.profile_image and profile.profile_image.name != 'default_profile.png' %}
+                <img src="{{ profile.profile_image.url }}" alt="Profile Picture" class="rounded-circle img-fluid border border-3 mb-3" style="width:150px; height:150px; object-fit:cover;">
+              {% else %}
+                <img src="{% static 'core/images/default_profile.png' %}"alt="Default Profile" class="rounded-circle img-fluid border border-3 mb-3" style="width:150px; height:150px; object-fit:cover;">
+              {% endif %}
+              <!-- Edit Profile Button triggers the modal -->
+              <button type="button" class="btn btn-outline-primary btn-sm mt-2" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                Edit Profile
+              </button>
+            </div>
+            <!-- Profile Details Column -->
+            <div class="col-md-8">
+              <h4>{{ profile.user.first_name }} {{ profile.user.last_name }}</h4>
+              <p class="mb-1"><i class="fas fa-user me-2"></i> @{{ profile.user.username }}</p>
+              <p class="mb-1"><i class="fas fa-envelope me-2"></i>{{ profile.user.email }}</p>
+              <p class="mb-1"><i class="fas fa-phone me-2"></i>{{ profile.phone_number }}</p>
+              <p class="mb-1"><i class="fas fa-map-marker-alt me-2"></i>{{ profile.address }}, {{ profile.city }}</p>
+            </div>
+          </div>
+          <hr>
+          <!-- Profile Statistics -->
+          <div class="row text-center">
+            {% if profile.is_provider %}
+              <div class="col-md-4 mb-3">
+                <div class="p-3 bg-light rounded">
+                  <h5 class="mb-0">{{ profile.years_of_experience }}</h5>
+                  <small class="text-muted">Experience (years)</small>
+                </div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <div class="p-3 bg-light rounded">
+                  <h5 class="mb-0">{{ profile.completed_jobs }}</h5>
+                  <small class="text-muted">Jobs Completed</small>
+                </div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <div class="p-3 bg-light rounded">
+                  <h5 class="mb-0">
+                    {{ profile.rating|star_rating }}
+                  </h5>
+                  <small class="text-muted">Rating ({{ profile.rating }})</small>
+                </div>
+              </div>
+            {% else %}
+              <div class="col-md-6 mb-3">
+                <div class="p-3 bg-light rounded">
+                  <h5 class="mb-0">{{ profile.completed_jobs }}</h5>
+                  <small class="text-muted">Jobs Completed</small>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+          
+          {# For service providers, display their reviews #}
+          {% if profile.is_provider %}
+          <hr>
+          <h4 class="mb-3">Reviews</h4>
+          {% if profile.reviews_received.all %}
+            <div class="list-group">
+              {% for review in profile.reviews_received.all %}
+                <div class="list-group-item">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span>{{ review.rating|star_rating }}</span>
+                    <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                  </div>
+                  <p class="mb-0">{{ review.comment|default:"No comment provided." }}</p>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted">No reviews yet.</p>
+          {% endif %}
+          {% endif %}
+        </div><!-- end card-body -->
+      </div><!-- end card -->
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends 'core/base.html' %}
+{% load custom_filters humanize %}
+
+{% block content %}
+<div class="container my-5">
+  <div class="text-center mb-4">
+    <h1 class="display-5 fw-bold">My Jobs</h1>
+  </div>
+  {% if jobs %}
+    <div class="row">
+      {% for job in jobs %}
+      <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card shadow-lg rounded-4 overflow-hidden">
+          <!-- Card Header with Gradient Background -->
+          <div class="card-header text-white" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">{{ job.task }}</h5>
+              <span class="badge bg-light text-primary fs-6">{{ job.get_status_display }}</span>
+            </div>
+          </div>
+          <!-- Card Body with Job Details -->
+          <div class="card-body">
+            <ul class="list-unstyled mb-0">
+              <li class="mb-2">
+                <strong>Category:</strong>
+                <span class="text-muted">{{ job.category }}</span>
+              </li>
+              <li class="mb-2">
+                <strong>Created:</strong>
+                <span class="text-muted">{{ job.created_at|timesince }} ago</span>
+              </li>
+              {% if job.scheduled_date %}
+              <li class="mb-2">
+                <strong>Scheduled:</strong>
+                <span class="text-muted">{{ job.scheduled_date|date:"M d, Y, H:i" }}</span>
+              </li>
+              {% endif %}
+              {% if job.price_rate_snapshot %}
+              <li class="mb-2">
+                <strong>Cost:</strong>
+                <span class="text-muted">€{{ job.price_rate_snapshot }}</span>
+              </li>
+              {% endif %}
+            </ul>
+          </div>
+          <!-- Card Footer with Action Buttons -->
+          <div class="card-footer bg-transparent border-top-0">
+            <div class="d-grid gap-2">
+              <a href="{% url 'job_detail' job.id %}" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-eye me-1"></i>View Details
+              </a>
+              <a href="{% url 'job_chat' job.id %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-comments me-1"></i>Open Chat
+              </a>
+              {% if user.profile.is_provider %}
+                {% if job.status == 'PENDING_CONFIRMATION' %}
+                  <a href="{% url 'accept_booking' job.id %}" class="btn btn-success btn-sm">
+                    <i class="fas fa-check me-1"></i>Accept
+                  </a>
+                  <a href="{% url 'decline_booking' job.id %}" class="btn btn-danger btn-sm">
+                    <i class="fas fa-times me-1"></i>Decline
+                  </a>
+                {% elif job.status == 'IN_PROGRESS' %}
+                  {% if job.client == request.user.profile or job.provider == request.user.profile %}
+                    <a href="{% url 'cancel_job' job.id %}" class="btn btn-warning btn-sm">
+                      <i class="fas fa-ban me-1"></i>Cancel Job
+                    </a>
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info text-center py-4">
+      <div class="mb-3">
+        <i class="fas fa-tasks fa-3x text-muted"></i>
+      </div>
+      {% if user.profile.is_provider %}
+        <h4 class="mb-3">No jobs assigned yet</h4>
+        <p class="text-muted mb-0">You have not received any job requests at the moment.</p>
+      {% else %}
+        <h4 class="mb-3">No jobs found</h4>
+        <p class="text-muted mb-0">You haven't created any jobs yet. Please use the Services menu to create a job.</p>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+
+<style>
+  .card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+  }
+  .card-header h5 {
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+</style>
+{% endblock %}

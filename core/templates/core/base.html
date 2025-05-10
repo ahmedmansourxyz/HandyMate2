@@ -1,0 +1,407 @@
+{% load static humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HandyMate - Modern Provider Portal</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    /* Global Styles */
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f7f9fc;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    /* Navigation Bar */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(0, 123, 255, 0.95);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .navbar-brand {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff !important;
+    }
+    .navbar-nav .nav-link {
+      font-size: 1rem;
+      font-weight: 500;
+      color: #e0eaff !important;
+      transition: color 0.3s ease, transform 0.3s ease;
+    }
+    .navbar-nav .nav-link:hover {
+      color: #ffffff !important;
+      transform: scale(1.05);
+    }
+    /* Username dropdown badge */
+    .role-badge {
+      background-color: #0056b3;
+      color: #fff;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      margin-left: 0.5rem;
+    }
+    /* Main Content Area */
+    main.container {
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 2rem auto;
+      background-color: #fff;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    /* Footer */
+    footer {
+      background-color: #0d2c54;
+      color: #fff;
+      text-align: center;
+      padding: 1rem;
+      margin-top: 2rem;
+    }
+    footer a {
+      color: #99ccff;
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+    footer a:hover {
+      color: #cce5ff;
+    }
+    /* Notifications Dropdown */
+    .dropdown-menu {
+      border: none;
+      border-radius: 8px;
+      overflow: hidden;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    .dropdown-header {
+      padding: 0.75rem 1rem;
+      background-color: #f8f9fa;
+      font-size: 0.9rem;
+    }
+    .list-group-item {
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .list-group-item:hover {
+      background-color: #f1f1f1;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Toast Container */
+    #toastContainer {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1200;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <header>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="{% url 'home' %}">
+          <i class="fas fa-hammer me-1"></i>HandyMate
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#modernNavbar" aria-controls="modernNavbar" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="modernNavbar">
+          <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+            {% if user.is_authenticated %}
+              <li class="nav-item">
+                {% if user.profile.is_provider %}
+                  <a class="nav-link" href="{% url 'provider_dashboard' %}">
+                    <i class="fas fa-tachometer-alt me-1"></i> Provider Dashboard
+                  </a>
+                {% else %}
+                  <a class="nav-link" href="{% url 'dashboard' %}">
+                    <i class="fas fa-tachometer-alt me-1"></i> Client Dashboard
+                  </a>
+                {% endif %}
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'services_overview' %}">
+                  <i class="fas fa-tools me-1"></i>Services
+                </a>
+              </li>
+              {% if user.profile.is_provider %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'provider_availability' %}">
+                    <i class="fas fa-calendar-alt me-1"></i>My Availability
+                  </a>
+                </li>
+              {% endif %}
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'my_jobs' %}">
+                  <i class="fas fa-briefcase me-1"></i>Jobs
+                </a>
+              </li>
+              <!-- Notifications Dropdown -->
+              <li class="nav-item dropdown">
+                <a class="nav-link position-relative" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="fas fa-bell fa-lg"></i>
+                  <span class="badge bg-danger rounded-pill" style="display:none;"></span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-end shadow-lg" aria-labelledby="notificationDropdown" style="width: 350px;">
+                  <div class="dropdown-header bg-light border-bottom">
+                    <strong>Notifications</strong>
+                    <a href="#" class="float-end small text-muted" id="clearNotifications">Clear All</a>
+                  </div>
+                  <div class="list-group list-group-flush" id="notificationList">
+                    <div class="dropdown-item text-center text-muted">Loading notifications...</div>
+                  </div>
+                </div>
+              </li>
+              <!-- Username Dropdown -->
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="fas fa-user-circle me-1"></i> {{ user.username }}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                  <li><a class="dropdown-item" href="{% url 'profile_view' %}">Profile</a></li>
+                  <li>
+                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                      Update Profile
+                    </a>
+                  </li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item" href="{% url 'logout' %}">
+                    <i class="fas fa-sign-out-alt me-1"></i>Logout
+                  </a></li>
+                </ul>
+              </li>
+            {% else %}
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'login' %}">
+                  <i class="fas fa-sign-in-alt me-1"></i>Login
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'register' %}">
+                  <i class="fas fa-user-plus me-1"></i>Register
+                </a>
+              </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+  
+  <!-- Toast Container for Bootstrap Toasts -->
+  <div id="toastContainer" class="toast-container p-3"></div>
+  <!-- Django Messages Container -->
+  <div id="djangoMessages" class="container my-3"></div>
+
+  <!-- Main Content Area -->
+  <main class="container my-5">
+    {% block content %}
+    {% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p class="mb-0">&copy; 2025 HandyMate. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- Notifications and Toasts Script -->
+  <script>
+    // Helper: Get a cookie by name (needed for CSRF)
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    // Function to mark a notification as read via API call
+    function markNotificationAsRead(notificationId) {
+      return fetch(`/api/mark_notification_read/${notificationId}/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        }
+      });
+    }
+
+    // Function to refresh notifications (updates badge and list)
+    function refreshNotifications() {
+      fetch('/api/unread_notifications/')
+        .then(response => {
+          const contentType = response.headers.get('Content-Type');
+          if (contentType && contentType.includes('application/json')) {
+            return response.json();
+          } else {
+            console.warn('Non-JSON response received; skipping notifications update.');
+            return { unread_count: 0, unread_list: [] };
+          }
+        })
+        .then(data => {
+          const badge = document.querySelector('#notificationDropdown .badge');
+          if (data.unread_count > 0) {
+            badge.textContent = data.unread_count;
+            badge.style.display = 'inline-block';
+          } else {
+            badge.style.display = 'none';
+          }
+          const list = document.getElementById("notificationList");
+          let html = '';
+          if (data.unread_list.length > 0) {
+            data.unread_list.forEach(notification => {
+              html += `
+                <a href="${notification.link}" class="list-group-item list-group-item-action d-flex align-items-center" data-id="${notification.id}">
+                  <img src="${notification.sender_profile_image}" alt="avatar" class="rounded-circle me-2" style="width:40px; height:40px;">
+                  <div>
+                    <div class="notification-message">${notification.message}</div>
+                    <small class="text-muted">${notification.created_at}</small>
+                  </div>
+                </a>
+              `;
+            });
+          } else {
+            html = '<div class="dropdown-item text-center text-muted">No new notifications</div>';
+          }
+          list.innerHTML = html;
+          attachNotificationClickHandlers();
+        })
+        .catch(err => console.error('Error refreshing notifications:', err));
+    }
+
+    // Attach click event handlers to notification items
+    function attachNotificationClickHandlers() {
+      document.querySelectorAll('#notificationList a[data-id]').forEach(item => {
+        item.removeEventListener('click', notificationClickHandler);
+        item.addEventListener('click', notificationClickHandler);
+      });
+    }
+
+    // When a notification is clicked, mark it as read then redirect
+    function notificationClickHandler(e) {
+      e.preventDefault();
+      const notificationId = this.dataset.id;
+      const redirectUrl = this.getAttribute('href');
+      markNotificationAsRead(notificationId)
+        .then(response => {
+          if(response.ok){
+            refreshNotifications();
+          }
+          window.location.href = redirectUrl;
+        })
+        .catch(err => {
+          console.error('Error marking notification as read:', err);
+          window.location.href = redirectUrl;
+        });
+    }
+
+    // Clear all notifications handler
+    document.getElementById('clearNotifications')?.addEventListener('click', function(e) {
+      e.preventDefault();
+      fetch('/api/clear_notifications/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        }
+      }).then(response => {
+        if (response.ok) {
+          refreshNotifications();
+        }
+      }).catch(err => console.error('Error clearing notifications:', err));
+    });
+
+    // Only run notification polling if the user is authenticated
+    {% if user.is_authenticated %}
+      setInterval(refreshNotifications, 5000);
+      refreshNotifications();
+    {% endif %}
+  </script>
+  
+  <!-- Toast Notifications (Single Definition in Base) -->
+  <script>
+    function showToast(message, level) {
+      let toastLevel = level === 'error' ? 'danger' : level;
+      const toastContainer = document.getElementById('toastContainer');
+      const toastElement = document.createElement('div');
+      toastElement.className = 'toast align-items-center text-bg-' + toastLevel + ' border-0';
+      toastElement.setAttribute('role', 'alert');
+      toastElement.setAttribute('aria-live', 'assertive');
+      toastElement.setAttribute('aria-atomic', 'true');
+      toastElement.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">
+            ${message}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      `;
+      toastContainer.appendChild(toastElement);
+      const toast = new bootstrap.Toast(toastElement, { delay: 5000 });
+      toast.show();
+    }
+
+    // Automatically show Django messages as toast notifications
+    document.addEventListener("DOMContentLoaded", function() {
+      {% if messages %}
+        {% for message in messages %}
+          showToast("{{ message|escapejs }}", "{{ message.tags }}");
+        {% endfor %}
+      {% endif %}
+    });
+  </script>
+
+  {% block extra_js %}{% endblock %}
+
+  {# --- Edit Profile Modal --- #}
+  {% if user.is_authenticated %}
+  <div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form method="POST" action="{% url 'profile_update' %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title" id="editProfileModalLabel">Edit Profile</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            {{ profile_update_form.as_p }}
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</body>
+</html>

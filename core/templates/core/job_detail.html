@@ -1,0 +1,176 @@
+{% extends 'core/base.html' %}
+{% load static custom_filters review_extras %}
+{% block content %}
+<div class="container my-5">
+  <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+    <!-- Card Header with gradient background -->
+    <div class="card-header text-white" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+      <div class="d-flex justify-content-between align-items-center">
+        <h3 class="mb-0">{{ job.title }}</h3>
+        <span class="badge bg-light text-primary fs-6">{{ job.get_status_display }}</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <!-- Job Overview Section -->
+      <div class="mb-4">
+        <h5 class="fw-bold">Job Overview</h5>
+      </div>
+      <div class="row">
+        <!-- Left Column: Job Details -->
+        <div class="col-md-6 border-end">
+          <ul class="list-unstyled">
+            <li class="mb-2">
+              <strong>Scheduled Date:</strong>
+              {% if job.scheduled_date %}
+                <span class="text-muted">{{ job.scheduled_date|date:"F j, Y, g:i a" }}</span>
+              {% else %}
+                <span class="text-muted">Not set</span>
+              {% endif %}
+            </li>
+            <li class="mb-2">
+              <strong>Category:</strong>
+              <span class="text-muted">{{ job.category }}</span>
+            </li>
+            <li class="mb-2">
+              <strong>Task:</strong>
+              <span class="text-muted">{{ job.task }}</span>
+            </li>
+            <li class="mb-2">
+              <strong>Duration:</strong>
+              <span class="text-muted">{{ job.duration }}</span>
+            </li>
+            {% if job.price_rate_snapshot %}
+            <li class="mb-2">
+              <strong>Cost:</strong>
+              <span class="text-muted">€{{ job.price_rate_snapshot }}</span>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+        <!-- Right Column: Relevant User Details -->
+        <div class="col-md-6">
+          {% if request.user.profile.is_provider %}
+            {# Service provider sees client's info #}
+            {% if job.client %}
+              <div class="text-center">
+                {% if job.client.profile_image and job.client.profile_image.name != 'default_profile.png'%}
+                  <img src="{{ job.client.profile_image.url }}" class="rounded-circle mb-3 shadow-sm" style="width:120px; height:120px; object-fit:cover;">
+                {% else %}
+                  <img src="{% static 'core/images/default_profile.png' %}" class="rounded-circle mb-3 shadow-sm" style="width:120px; height:120px; object-fit:cover;">
+                {% endif %}
+                <h5 class="mb-1">{{ job.client.user.first_name|default:job.client.user.username }}</h5>
+                <p class="mb-0"><i class="fas fa-phone me-1"></i>{{ job.client.phone_number }}</p>
+                <p class="mb-0"><i class="fas fa-map-marker-alt me-1"></i>{{ job.client.city }}</p>
+                <p class="mb-0"><i class="fas fa-envelope me-1"></i>{{ job.client.user.email }}</p>
+              </div>
+            {% else %}
+              <p class="text-muted text-center"><em>Client information not available.</em></p>
+            {% endif %}
+          {% else %}
+            {# Client sees service provider's info #}
+            {% if job.provider %}
+              <div class="text-center">
+                {% if job.provider.profile_image and job.provider.profile_image.name != 'default_profile.png' %}
+                  <img src="{{ job.provider.profile_image.url }}" class="rounded-circle mb-3 shadow-sm" style="width:120px; height:120px; object-fit:cover;">
+                {% else %}
+                  <img src="{% static 'core/images/default_profile.png' %}" class="rounded-circle mb-3 shadow-sm" style="width:120px; height:120px; object-fit:cover;">
+                {% endif %}
+                <h5 class="mb-1">{{ job.provider.user.first_name|default:job.provider.user.username }}</h5>
+                <div class="d-flex justify-content-center gap-2 mb-2">
+                  <span class="badge bg-info"><i class="fas fa-star me-1"></i>{{ job.provider.rating }}</span>
+                  <span class="badge bg-success"><i class="fas fa-briefcase me-1"></i>{{ job.provider.completed_jobs }} jobs</span>
+                </div>
+                <p class="mb-0"><strong>Experience:</strong> {{ job.provider.years_of_experience }} years</p>
+                <p class="mb-0"><i class="fas fa-phone me-1"></i>{{ job.provider.phone_number }}</p>
+                <p class="mb-0"><i class="fas fa-map-marker-alt me-1"></i>{{ job.provider.city }}</p>
+              </div>
+            {% else %}
+              <p class="text-muted text-center"><em>Service provider information not available.</em></p>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+      
+      {% if job.problem_image %}
+      <div class="mt-4">
+        <img src="{{ job.problem_image.url }}" alt="Problem Image" class="img-fluid rounded shadow-sm">
+      </div>
+      {% endif %}
+      
+      <!-- Actions Section -->
+      <div class="mt-4">
+        <h5 class="fw-bold">Actions</h5>
+        <div class="d-flex flex-wrap gap-3">
+          <a href="{% url 'job_chat' job.id %}" class="btn btn-outline-secondary">
+            <i class="fas fa-comments me-1"></i>Open Chat
+          </a>
+          {% if request.user.profile.is_provider and job.status == "PENDING_CONFIRMATION" %}
+            <a href="{% url 'accept_booking' job.id %}" class="btn btn-success">
+              <i class="fas fa-check me-1"></i>Confirm Booking
+            </a>
+            <a href="{% url 'decline_booking' job.id %}" class="btn btn-danger">
+              <i class="fas fa-times me-1"></i>Decline Booking
+            </a>
+          {% endif %}
+          {% if job.status == "PENDING_CONFIRMATION" or job.status == "IN_PROGRESS" %}
+            <a href="{% url 'cancel_job' job.id %}" class="btn btn-warning">
+              <i class="fas fa-ban me-1"></i>Cancel Booking
+            </a>
+          {% endif %}
+          {% if not request.user.profile.is_provider and job.status == "IN_PROGRESS" %}
+            <a href="{% url 'complete_job' job.id %}" class="btn btn-success">
+              <i class="fas fa-check-double me-1"></i>Mark as Completed
+            </a>
+          {% endif %}
+          {% if not request.user.profile.is_provider and job.status == "COMPLETED" %}
+            {% if not job|has_review %}
+              <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reviewModal">
+                <i class="fas fa-star me-1"></i>Leave a Review
+              </button>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+      
+      <!-- Review Display -->
+      {% if job.status == "COMPLETED" %}
+        <hr>
+        <h5 class="fw-bold">Review</h5>
+        {% if job|has_review %}
+          <div class="review p-3 bg-light rounded">
+            <p><strong>Rating:</strong> {{ job.review.rating }}</p>
+            <p><strong>Comment:</strong> {{ job.review.comment|default:"No comment provided." }}</p>
+            <p><small class="text-muted">Reviewed on {{ job.review.created_at|date:"F j, Y" }}</small></p>
+          </div>
+        {% else %}
+          <p class="text-muted">No review has been submitted for this job yet.</p>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Review Modal -->
+{% if not request.user.profile.is_provider and job.status == "COMPLETED" and not job|has_review %}
+<div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{% url 'add_review' job.id %}">
+        {% csrf_token %}
+        <div class="modal-header" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+          <h5 class="modal-title text-white" id="reviewModalLabel">Leave a Review</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          {{ review_form.as_p }}
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Submit Review</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

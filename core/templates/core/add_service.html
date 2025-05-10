@@ -1,0 +1,155 @@
+{% extends 'core/base.html' %}
+{% load static dict_extras %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <!-- Progress Bar -->
+      <div class="progress mb-4" style="height: 4px;">
+        <div class="progress-bar bg-primary" role="progressbar" style="width: 33%;" aria-valuenow="33" aria-valuemin="0" aria-valuemax="100"></div>
+      </div>
+
+      <form method="POST" id="serviceWizardForm">
+        {% csrf_token %}
+        {% for hidden in form.hidden_fields %}
+          {{ hidden }}
+        {% endfor %}
+
+        <!-- Step 1: Category Selection -->
+        <div id="step1">
+          <h2 class="mb-4 text-center">Choose a Category</h2>
+          <div class="row">
+            {% for key, label in service_categories %}
+              <div class="col-md-4 mb-3">
+                <div class="card category-card border-0" data-category="{{ key }}" style="cursor: pointer; position: relative;">
+                  <img src="{{ category_images|get_item:key}}" 
+                      class="card-img-top" 
+                      alt="{{ label }}" 
+                      loading="lazy" 
+                      style="height: 250px; object-fit: cover;">
+                  <div class="card-img-overlay d-flex align-items-end p-0">
+                    <div class="w-100 bg-dark bg-opacity-50 text-white p-2 text-center">
+                      {{ label }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Step 2: Task Selection -->
+        <div id="step2" class="d-none">
+          <h2 class="mb-4 text-center">Select Your Service</h2>
+          <div class="row" id="tasksContainer"></div>
+          <div class="text-center mt-4">
+            <button type="button" class="btn btn-secondary" id="backToStep1">← Back</button>
+          </div>
+        </div>
+
+        <!-- Step 3: Price Input -->
+        <div id="step3" class="d-none">
+          <div class="card mx-auto" style="max-width: 500px;">
+            <div class="card-body">
+              <h2 class="mb-4 text-center">Set Your Rate</h2>
+              <div class="mb-4">
+                <div class="input-group input-group-lg">
+                  {{ form.price_rate }}
+                  <span class="input-group-text">€</span>
+                </div>
+                {% if current_step == 3 and form.price_rate.errors %}
+                  <div class="alert alert-danger mt-3">
+                    {{ form.price_rate.errors }}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="text-center">
+                <button type="button" class="btn btn-secondary me-2" id="backToStep2">← Back</button>
+                <button type="submit" class="btn btn-primary">Publish Service 🚀</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  const tasksByCategory = {{ tasks_by_category|safe }};
+  const steps = {
+    step1: document.getElementById('step1'),
+    step2: document.getElementById('step2'),
+    step3: document.getElementById('step3')
+  };
+  const progressBar = document.querySelector('.progress-bar');
+
+  // Initialize currentStep from context; default to 1.
+  let currentStep = {{ current_step|default:"1" }};
+  updateProgress();
+
+  function updateProgress() {
+    const progressWidth = (currentStep / 3) * 100;
+    progressBar.style.width = `${progressWidth}%`;
+  }
+
+  function showStep(step) {
+    currentStep = step;
+    Object.values(steps).forEach(el => el.classList.add('d-none'));
+    steps[`step${step}`].classList.remove('d-none');
+    updateProgress();
+  }
+
+  document.querySelectorAll('.category-card').forEach(card => {
+    card.addEventListener('click', function(){
+      document.querySelectorAll('.category-card').forEach(c => c.classList.remove('border', 'border-primary'));
+      this.classList.add('border', 'border-primary');
+
+      const selectedCategory = this.dataset.category;
+      document.getElementById('id_category').value = selectedCategory;
+
+      // Populate tasks for the selected category.
+      const tasksContainer = document.getElementById('tasksContainer');
+      tasksContainer.innerHTML = '';
+      tasksByCategory[selectedCategory].forEach(([value, label]) => {
+        const col = document.createElement('div');
+        col.className = 'col-md-4 mb-3';
+        const card = document.createElement('div');
+        card.className = 'card task-card h-100';
+        card.style.cursor = 'pointer';
+        card.dataset.task = value;
+        card.innerHTML = `
+          <div class="card-body text-center">
+            <h5 class="card-title">${label}</h5>
+          </div>
+        `;
+        col.appendChild(card);
+        tasksContainer.appendChild(col);
+      });
+
+      showStep(2);
+    });
+  });
+
+  document.getElementById('tasksContainer').addEventListener('click', (e) => {
+    const taskCard = e.target.closest('.card.task-card');
+    if (taskCard) {
+      document.querySelectorAll('.card.task-card').forEach(c => c.classList.remove('border', 'border-primary'));
+      taskCard.classList.add('border', 'border-primary');
+      document.getElementById('id_task').value = taskCard.dataset.task;
+      showStep(3);
+    }
+  });
+
+  document.getElementById('backToStep1').addEventListener('click', () => showStep(1));
+  document.getElementById('backToStep2').addEventListener('click', () => showStep(2));
+
+  // Price input: allow only numbers and dot.
+  document.getElementById('id_price_rate').addEventListener('input', function() {
+    this.value = this.value.replace(/[^0-9.]/g, '');
+  });
+});
+</script>
+{% endblock %}

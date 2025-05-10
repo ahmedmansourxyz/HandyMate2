@@ -1,0 +1,247 @@
+{% extends 'core/base.html' %}
+{% load static humanize %}
+{% block content %}
+<div class="container-fluid px-4">
+  <!-- Hero Header -->
+  <div class="dashboard-hero mb-5 position-relative overflow-hidden text-center p-5 rounded-4">
+    <div class="avatar-wrapper mb-3 mx-auto">
+      <div class="avatar-frame">
+        {% if profile.profile_image and profile.profile_image.name != 'default_profile.png' %}
+          <img src="{{ profile.profile_image.url }}" class="avatar-img" alt="User avatar">
+        {% else %}
+          <img src="{% static 'core/images/default_profile.png' %}" class="avatar-img" alt="Default Profile">
+        {% endif %}
+      </div>
+    </div>
+    <h1 class="display-5 fw-bold text-white mb-2">
+      Welcome Back, {{ request.user.first_name|default:request.user.username }}!
+    </h1>
+    <p class="lead text-white-50 mb-4">Manage your home services in one place</p>
+    <a href="/services/" class="btn btn-light btn-lg rounded-pill px-4 shadow-sm">
+      <i class="fas fa-plus me-2"></i>New Service Request
+    </a>
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="row g-4 mb-5">
+    <div class="col-6 col-md-3">
+      <div class="stat-card card border-0 shadow-sm h-100">
+        <div class="card-body d-flex align-items-center">
+          <div class="stat-icon me-3 bg-primary text-white d-flex justify-content-center align-items-center rounded-circle">
+            <i class="fas fa-toolbox fa-lg"></i>
+          </div>
+          <div>
+            <div class="stat-number h3 mb-0">{{ total_jobs }}</div>
+            <div class="stat-label text-muted">Total Jobs</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card card border-0 shadow-sm h-100">
+        <div class="card-body d-flex align-items-center">
+          <div class="stat-icon me-3 bg-success text-white d-flex justify-content-center align-items-center rounded-circle">
+            <i class="fas fa-check-circle fa-lg"></i>
+          </div>
+          <div>
+            <div class="stat-number h3 mb-0">{{ active_jobs }}</div>
+            <div class="stat-label text-muted">Active Jobs</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card card border-0 shadow-sm h-100">
+        <div class="card-body d-flex align-items-center">
+          <div class="stat-icon me-3 bg-warning text-dark d-flex justify-content-center align-items-center rounded-circle">
+            <i class="fas fa-clock fa-lg"></i>
+          </div>
+          <div>
+            <div class="stat-number h3 mb-0">{{ pending_jobs }}</div>
+            <div class="stat-label text-muted">Pending</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card card border-0 shadow-sm h-100">
+        <div class="card-body d-flex align-items-center">
+          <div class="stat-icon me-3 bg-info text-white d-flex justify-content-center align-items-center rounded-circle">
+            <i class="fas fa-comments fa-lg"></i>
+          </div>
+          <div>
+            <div class="stat-number h3 mb-0">{{ notification_count }}</div>
+            <div class="stat-label text-muted">Messages</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Jobs Section -->
+  <div class="dashboard-section mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="section-title">Active Jobs</h2>
+    </div>
+    {% if jobs %}
+      <div class="row g-4">
+        {% for job in jobs %}
+          <div class="col-12 col-md-6 col-lg-4">
+            <div class="job-card card border-0 shadow-sm h-100">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                  <span class="job-status-badge me-3 status-{{ job.status|lower }}">
+                    {{ job.get_status_display }}
+                  </span>
+                  <div class="service-type text-muted">
+                    <i class="fas fa-tools me-2"></i>{{ job.service_type }}
+                  </div>
+                </div>
+                <h5 class="job-title mb-3 fw-semibold">{{ job.title }}</h5>
+                <div class="job-meta mb-4 text-muted">
+                  <div class="meta-item mb-2">
+                    <i class="fas fa-calendar-alt me-2"></i>
+                    {{ job.scheduled_date|date:"M d, Y" }}
+                  </div>
+                  <div class="meta-item mb-2">
+                    <i class="fas fa-clock me-2"></i>
+                    {{ job.scheduled_date|time:"g:i A" }}
+                  </div>
+                  <div class="meta-item mb-2">
+                    <i class="fas fa-tag me-2"></i>
+                    Price: 
+                    {% if job.price_rate_snapshot %}
+                      €{{ job.price_rate_snapshot }}
+                    {% else %}
+                      N/A
+                    {% endif %}
+                  </div>
+                  {% if job.duration %}
+                  <div class="meta-item mb-2">
+                    <i class="fas fa-hourglass-half me-2"></i>
+                    Duration: {{ job.duration }}
+                  </div>
+                  {% endif %}
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                  <a href="{% url 'job_detail' job.id %}" class="btn btn-link text-decoration-none px-0">
+                    View Details <i class="fas fa-arrow-right ms-1"></i>
+                  </a>
+                  <a href="{% url 'job_chat' job.id %}" class="btn btn-primary btn-sm rounded-pill px-3">
+                    <i class="fas fa-comment-dots me-2"></i>Chat
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state text-center py-5">
+        <h3 class="mb-3">No Active Jobs</h3>
+        <p class="text-muted mb-4">Get started by requesting your first home service</p>
+        <a href="/services" class="btn btn-primary btn-lg rounded-pill px-4">
+          <i class="fas fa-plus me-2"></i>Request Service
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  /* Hero Section */
+  .dashboard-hero {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: #fff;
+    box-shadow: 0 8px 16px rgba(59, 130, 246, 0.15);
+  }
+
+  .avatar-wrapper {
+    width: 90px;
+    height: 90px;
+  }
+
+  .avatar-frame {
+    width: 100%;
+    height: 100%;
+    border: 3px solid rgba(255,255,255,0.2);
+    border-radius: 50%;
+    padding: 4px;
+    overflow: hidden;
+  }
+
+  .avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+
+  /* Stat Cards */
+  .stat-card {
+    border-radius: 12px;
+    transition: box-shadow 0.2s ease;
+  }
+  .stat-card:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  }
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    font-size: 1.25rem;
+  }
+  
+  /* Section Title */
+  .section-title {
+    font-weight: 600;
+    font-size: 1.5rem;
+    color: #374151;
+  }
+
+  /* Job Cards */
+  .job-card {
+    border-radius: 12px;
+    transition: box-shadow 0.2s ease;
+  }
+  .job-card:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  }
+
+  .job-status-badge {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-radius: 12px;
+  }
+
+  /* Status Colors */
+  .status-pending {
+    background-color: #fef9c3;
+    color: #92400e;
+  }
+  .status-in-progress {
+    background-color: #e0f2fe;
+    color: #075985;
+  }
+  .status-completed {
+    background-color: #dcfce7;
+    color: #166534;
+  }
+
+  /* Empty State */
+  .empty-state h3 {
+    font-weight: 600;
+    color: #111827;
+  }
+
+  /* Additional Spacing Adjustments */
+  .job-title {
+    color: #1f2937;
+  }
+  .job-meta i {
+    color: #9ca3af;
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,71 @@
+{# accounts/provider_calendar.html #}
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="container my-5">
+  <h1>My Calendar</h1>
+  <p class="lead">Manage your weekly availability below.</p>
+  
+  <div class="card mb-4">
+    <div class="card-header">
+      <h4>Add Availability</h4>
+    </div>
+    <div class="card-body">
+      <form method="POST">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-4">
+            {{ form.day_of_week.label_tag }}
+            {{ form.day_of_week }}
+          </div>
+          <div class="col-md-4">
+            {{ form.start_time.label_tag }}
+            {{ form.start_time }}
+          </div>
+          <div class="col-md-4">
+            {{ form.end_time.label_tag }}
+            {{ form.end_time }}
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Add Availability</button>
+      </form>
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="card-header">
+      <h4>Current Availabilities</h4>
+    </div>
+    <div class="card-body">
+      {% if availabilities %}
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Day</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for availability in availabilities %}
+          <tr>
+            <td>{{ availability.day_of_week }}</td>
+            <td>{{ availability.start_time }}</td>
+            <td>{{ availability.end_time }}</td>
+            <td>
+              <form action="{% url 'delete_availability' availability.id %}" method="POST" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="text-muted">No availabilities set yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

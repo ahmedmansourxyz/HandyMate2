@@ -1,0 +1,234 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block content %}
+<form method="post">
+  {% csrf_token %}
+  {{ wizard.management_form }}
+  {{ form.scheduled_date }}
+  <div class="container my-5">
+    <div class="card booking-card modern-card shadow-lg">
+      <!-- Card Header -->
+      <div class="card-header text-center py-4" 
+           style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff;">
+        <h2 class="mb-1 fw-bold">Select Time Slot</h2>
+        <small class="text-light">Step 2 of 3</small>
+      </div>
+      
+      <!-- Card Body -->
+      <div class="card-body">
+        <div class="row g-4">
+          <!-- Calendar Column -->
+          <div class="col-lg-7 pe-lg-4">
+            <div class="mb-4">
+              <h4 class="mb-3">Available Time Slots</h4>
+              <div class="datepicker-container bg-white rounded-3 p-3 shadow-sm">
+                <div id="datePicker"></div>
+              </div>
+              <div class="mt-4">
+                <h5 id="dateDisplay" class="text-center mb-3"></h5>
+                <div id="timeSlots" class="d-flex flex-wrap gap-2 justify-content-center"></div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Provider Info Column -->
+          <div class="col-lg-5 border-start ps-lg-4">
+            <div class="provider-info bg-light rounded-3 p-4">
+              <div class="text-center mb-4">
+                {% if provider.profile_image and provider.profile_image.name != 'default_profile.png' %}
+                  <img src="{{ provider.profile_image.url }}" 
+                       class="rounded-circle img-fluid border shadow-sm mb-3" 
+                       alt="{{ provider.user.username }}"
+                       style="width: 120px; height: 120px; object-fit: cover;">
+                {% else %}
+                  <img src="{% static 'core/images/default_profile.png' %}" 
+                       class="rounded-circle img-fluid border shadow-sm mb-3" 
+                       alt="{{ provider.user.username }} (default)"
+                       style="width: 120px; height: 120px; object-fit: cover;">
+                {% endif %}
+                <h4 class="mb-2">{{ provider_first_name }}</h4>
+                <div class="d-flex justify-content-center gap-2 mb-3">
+                  <span class="badge bg-info">
+                    <i class="fas fa-star me-1"></i>{{ provider.rating }}/5
+                  </span>
+                  <span class="badge bg-success">
+                    <i class="fas fa-briefcase me-1"></i>{{ provider.completed_jobs }} jobs
+                  </span>
+                </div>
+              </div>
+              <div class="provider-meta">
+                <div class="d-flex align-items-center mb-2">
+                  <i class="fas fa-tools me-2 text-primary"></i>
+                  <span class="fw-medium">Category:</span>
+                  <span class="ms-2">{{ service_category }}</span>
+                </div>
+                <div class="d-flex align-items-center mb-2">
+                  <i class="fas fa-clock me-2 text-primary"></i>
+                  <span class="fw-medium">Experience:</span>
+                  <span class="ms-2">{{ provider.years_of_experience }} years</span>
+                </div>
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-map-marker-alt me-2 text-primary"></i>
+                  <span class="fw-medium">Location:</span>
+                  <span class="ms-2">{{ provider.city }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- End Provider Info Column -->
+        </div>
+      </div>
+      
+      <!-- Card Footer -->
+      <div class="card-footer bg-transparent border-top-0 py-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <button type="button" onclick="window.history.back()" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Back
+          </button>
+          <div class="step-indicator">
+            <span class="text-muted">Step 2 of 3</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<style>
+  .datepicker-container .flatpickr-calendar {
+    margin: 0 auto;
+    box-shadow: none;
+  }
+  
+  #timeSlots button {
+    min-width: 100px;
+    transition: all 0.3s ease;
+  }
+  
+  #timeSlots button.active {
+    background-color: #3b82f6 !important;
+    border-color: #3b82f6 !important;
+    color: white !important;
+  }
+  
+  /* Only add the green dot if the day is available */
+  .flatpickr-day.available {
+    position: relative;
+  }
+  .flatpickr-day.available::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    width: 8px;
+    height: 8px;
+    background-color: #10b981;
+    border-radius: 50%;
+  }
+</style>
+
+{% block extra_js %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+// Helper function to format a date as local ISO (YYYY-MM-DD)
+function formatLocalISO(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// providerTodayEnd is passed from the view context (e.g. "15:00:00" or empty)
+var providerTodayEnd = "{{ provider_today_end }}";
+
+document.addEventListener("DOMContentLoaded", function() {
+  const datePicker = flatpickr("#datePicker", {
+    inline: true,
+    mode: "single",
+    minDate: "today",
+    onDayCreate: function(dObj, dStr, fp, dayElem) {
+      const today = new Date();
+      const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const dayDate = dayElem.dateObj;
+      
+      // Skip past dates (any date before today's midnight)
+      if (dayDate < todayMidnight) {
+          return;
+      }
+      
+      const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const currentDayName = dayNames[dayDate.getDay()];
+      // available_weekdays passed from the view
+      const availableDays = [{% for day in available_weekdays %}"{{ day }}", {% endfor %}];
+      const isToday = (dayDate.getFullYear() === today.getFullYear() &&
+                       dayDate.getMonth() === today.getMonth() &&
+                       dayDate.getDate() === today.getDate());
+      if (availableDays.includes(currentDayName)) {
+        if (isToday && providerTodayEnd) {
+          const parts = providerTodayEnd.split(':');
+          const endHour = parseInt(parts[0], 10);
+          const endMinute = parseInt(parts[1], 10);
+          const endSecond = parts[2] ? parseInt(parts[2], 10) : 0;
+          const providerEndTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), endHour, endMinute, endSecond);
+          // Only mark today as available if current time is before provider's end time
+          if (today < providerEndTime) {
+            dayElem.classList.add("available");
+          }
+        } else if (!isToday) {
+          // For future dates, mark as available.
+          dayElem.classList.add("available");
+        }
+      }
+    },
+    onChange: function(selectedDates) {
+      if (selectedDates.length > 0) {
+        loadTimeSlots(selectedDates[0]);
+      }
+    }
+  });
+
+  function loadTimeSlots(date) {
+    const providerId = {{ provider.id }};
+    const dateStr = formatLocalISO(date);
+    
+    fetch(`/api/get-available-timeslots/?provider_id=${providerId}&date=${dateStr}`)
+      .then(response => response.json())
+      .then(slots => renderTimeSlots(slots, date));
+  }
+
+  function renderTimeSlots(slots, date) {
+    const container = document.getElementById("timeSlots");
+    container.innerHTML = "";
+    
+    slots.forEach(slotStr => {
+      const slotDate = new Date(slotStr);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn btn-outline-primary rounded-pill";
+      btn.textContent = slotDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      
+      btn.addEventListener("click", function() {
+        document.querySelectorAll("#timeSlots button").forEach(b => b.classList.remove("active"));
+        this.classList.add("active");
+        document.getElementById("id_scheduled_date").value = slotStr;
+        setTimeout(() => document.querySelector("form").submit(), 300);
+      });
+      
+      container.appendChild(btn);
+    });
+    
+    document.getElementById("dateDisplay").textContent = date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+
+  // Load initial slots for today
+  loadTimeSlots(new Date());
+});
+</script>
+{% endblock %}
+{% endblock %}

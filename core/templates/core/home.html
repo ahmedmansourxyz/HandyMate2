@@ -1,0 +1,206 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container-fluid p-0">
+  <!-- Hero Section -->
+  <section class="hero-section position-relative">
+    <div class="hero-bg" style="background-image: url('{% static 'core/images/background.avif' %}');"></div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content text-center text-white">
+      <h1 class="display-3 fw-bold mb-3 text-shadow">Find Your Trusted Provider</h1>
+      <p class="lead mb-4 text-shadow">
+        Quick, reliable service at your fingertips.
+      </p>
+      <a href="{% url 'register' %}" class="btn btn-lg btn-primary shadow">
+        <i class="fas fa-user-plus me-2"></i>Join Now
+      </a>
+    </div>
+  </section>
+
+  <!-- Featured Services Section -->
+  <section class="py-5 bg-light">
+    <div class="container">
+      <div class="row text-center mb-4">
+        <div class="col">
+          <h2 class="fw-bold">Our Top Services</h2>
+          <p class="text-muted">Expert services in Carpentry, Cleaning, and Gardening.</p>
+        </div>
+      </div>
+      <div class="row row-cols-1 row-cols-md-3 g-4">
+        <!-- Carpentry Card -->
+        <div class="col">
+          <div class="card border-0 shadow-sm service-card h-100">
+            <img src="{% static 'core/images/carpentry.jpg' %}" class="card-img-top" alt="Carpentry" style="height:200px; object-fit:cover;">
+            <div class="card-body text-center">
+              <h5 class="card-title">Carpentry</h5>
+              <p class="card-text">Skilled carpentry and custom woodworking.</p>
+            </div>
+            <div class="card-footer text-center bg-white border-0">
+              <a href="{% url 'service_providers' 'Carpentry' 'all' %}" class="btn btn-sm btn-outline-primary">Explore</a>
+            </div>
+          </div>
+        </div>
+        <!-- Cleaning Card -->
+        <div class="col">
+          <div class="card border-0 shadow-sm service-card h-100">
+            <img src="{% static 'core/images/cleaning.jpg' %}" class="card-img-top" alt="Cleaning" style="height:200px; object-fit:cover;">
+            <div class="card-body text-center">
+              <h5 class="card-title">Cleaning</h5>
+              <p class="card-text">Professional cleaning for a spotless home or office.</p>
+            </div>
+            <div class="card-footer text-center bg-white border-0">
+              <a href="{% url 'service_providers' 'Cleaning' 'all' %}" class="btn btn-sm btn-outline-primary">Explore</a>
+            </div>
+          </div>
+        </div>
+        <!-- Gardening Card -->
+        <div class="col">
+          <div class="card border-0 shadow-sm service-card h-100">
+            <img src="{% static 'core/images/gardening.jpg' %}" class="card-img-top" alt="Gardening" style="height:200px; object-fit:cover;">
+            <div class="card-body text-center">
+              <h5 class="card-title">Gardening</h5>
+              <p class="card-text">Beautify your outdoors with expert gardening.</p>
+            </div>
+            <div class="card-footer text-center bg-white border-0">
+              <a href="{% url 'service_providers' 'Gardening' 'all' %}" class="btn btn-sm btn-outline-primary">Explore</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials Section -->
+  <section class="py-5 testimonials-section">
+    <div class="container">
+      <div class="row text-center mb-4">
+        <div class="col">
+          <h2 class="fw-bold">What Our Customers Say</h2>
+          <p class="text-muted">Real reviews from satisfied customers.</p>
+        </div>
+      </div>
+      <div class="row row-cols-1 row-cols-md-3 g-4">
+        <!-- Testimonial 1 -->
+        <div class="col">
+          <div class="card border-0 shadow-sm testimonial-card h-100">
+            <div class="card-body">
+              <p class="card-text fst-italic">"HandyMate connected me with a fantastic provider quickly. Highly recommended!"</p>
+            </div>
+            <div class="card-footer bg-white border-0 text-end">
+              <small class="text-muted">- Emily R.</small>
+            </div>
+          </div>
+        </div>
+        <!-- Testimonial 2 -->
+        <div class="col">
+          <div class="card border-0 shadow-sm testimonial-card h-100">
+            <div class="card-body">
+              <p class="card-text fst-italic">"The booking process was smooth and the service professional. I'll use HandyMate again!"</p>
+            </div>
+            <div class="card-footer bg-white border-0 text-end">
+              <small class="text-muted">- David P.</small>
+            </div>
+          </div>
+        </div>
+        <!-- Testimonial 3 -->
+        <div class="col">
+          <div class="card border-0 shadow-sm testimonial-card h-100">
+            <div class="card-body">
+              <p class="card-text fst-italic">"Exceptional service with great communication. My go-to for home repairs!"</p>
+            </div>
+            <div class="card-footer bg-white border-0 text-end">
+              <small class="text-muted">- Lisa M.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Call To Action Section -->
+  <section class="py-5 cta-section text-center">
+    <div class="container">
+      <h2 class="fw-bold mb-3">Ready to Experience Quality Service?</h2>
+      <p class="lead mb-4 text-muted">Join HandyMate today and connect with expert providers near you.</p>
+      <a href="{% url 'register' %}" class="btn btn-lg btn-primary shadow">
+        <i class="fas fa-user-plus me-2"></i>Sign Up Now
+      </a>
+    </div>
+  </section>
+</div>
+
+<!-- Custom CSS for Enhanced Home Page Design -->
+<style>
+  /* HERO SECTION */
+  .hero-section {
+    position: relative;
+    height: 75vh;
+    min-height: 450px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    z-index: 1;
+  }
+  .hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.35);
+    z-index: 2;
+  }
+  .hero-content {
+    position: relative;
+    z-index: 3;
+    padding: 0 15px;
+  }
+  .text-shadow {
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+  }
+  
+  /* SERVICE CARDS */
+  .service-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .service-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+  }
+  
+  /* TESTIMONIAL CARDS */
+  .testimonial-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .testimonial-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  }
+  
+  /* CTA SECTION */
+  .cta-section {
+    background: #ffffff;
+  }
+  
+  /* BUTTONS */
+  .btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+  }
+  .btn-primary:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+  }
+</style>
+{% endblock %}

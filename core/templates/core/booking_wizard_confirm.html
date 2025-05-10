@@ -1,0 +1,154 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block content %}
+<form method="post">
+  {% csrf_token %}
+  {{ wizard.management_form }}
+  <div class="container my-5">
+    <div class="card booking-card modern-card shadow-lg">
+      <!-- Card Header with dark gradient and white text -->
+      <div class="card-header text-center py-4" 
+           style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff;">
+        <h2 class="mb-1 fw-bold">Confirm Booking</h2>
+        <small class="text-light">Step 3 of 3</small>
+      </div>
+      
+      <!-- Card Body -->
+      <div class="card-body">
+        <div class="row g-4">
+          <!-- Confirmation Details Column -->
+          <div class="col-lg-7 pe-lg-4">
+            <div class="mb-4">
+              <h4 class="mb-3">Booking Summary</h4>
+              <div class="card border-0 bg-light">
+                <div class="card-body">
+                  <!-- Selected Time Slot -->
+                  <div class="timeline-item mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                      <div class="icon-circle bg-primary text-white me-3" 
+                           style="width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-calendar-alt"></i>
+                      </div>
+                      <div>
+                        <h6 class="mb-0">Selected Time Slot</h6>
+                        <p class="text-muted mb-0">
+                          {% if timeslot_data and timeslot_data.scheduled_date %}
+                            {{ timeslot_data.scheduled_date|date:"F j, Y, g:i a" }}
+                          {% else %}
+                            Not set
+                          {% endif %}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Selected Task -->
+                  <div class="timeline-item mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                      <div class="icon-circle bg-success text-white me-3" 
+                           style="width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-tasks"></i>
+                      </div>
+                      <div>
+                        <h6 class="mb-0">Selected Task</h6>
+                        <p class="text-muted mb-0">
+                          {% if selected_task %}
+                            {{ selected_task }}
+                          {% elif task_data and task_data.task %}
+                            {{ task_data.task }}
+                          {% else %}
+                            Not set
+                          {% endif %}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Price Information -->
+                  <div class="timeline-item mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                      <div class="icon-circle bg-warning text-white me-3" 
+                           style="width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-euro-sign"></i>
+                      </div>
+                      <div>
+                        <h6 class="mb-0">Price</h6>
+                        <p class="text-muted mb-0">
+                          €{{ price }}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Additional Notes -->
+                  <div class="form-group">
+                    <label class="form-label fw-medium">Additional Notes</label>
+                    {{ form.additional_note }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Provider Info Column -->
+          <div class="col-lg-5 border-start ps-lg-4">
+            <div class="provider-info bg-light rounded-3 p-4">
+              <div class="text-center mb-4">
+                {% if provider.profile_image and provider.profile_image.name != 'default_profile.png' %}
+                  <img src="{{ provider.profile_image.url }}" 
+                       class="rounded-circle img-fluid border shadow-sm mb-3" 
+                       alt="{{ provider.user.username }}"
+                       style="width: 120px; height: 120px; object-fit: cover;">
+                {% else %}
+                  <img src="{% static 'core/images/default_profile.png' %}" 
+                       class="rounded-circle img-fluid border shadow-sm mb-3" 
+                       alt="{{ provider.user.username }} (default)"
+                       style="width: 120px; height: 120px; object-fit: cover;">
+                {% endif %}
+                <h4 class="mb-2">{{ provider_first_name }}</h4>
+                <div class="d-flex justify-content-center gap-2 mb-3">
+                  <span class="badge bg-info">
+                    <i class="fas fa-star me-1"></i>{{ provider.rating }}/5
+                  </span>
+                  <span class="badge bg-success">
+                    <i class="fas fa-briefcase me-1"></i>{{ provider.completed_jobs }} jobs
+                  </span>
+                </div>
+              </div>
+              <div class="provider-meta">
+                <div class="d-flex align-items-center mb-2">
+                  <i class="fas fa-tools me-2 text-primary"></i>
+                  <span class="fw-medium">Category:</span>
+                  <span class="ms-2">{{ service_category }}</span>
+                </div>
+                <div class="d-flex align-items-center mb-2">
+                  <i class="fas fa-clock me-2 text-primary"></i>
+                  <span class="fw-medium">Experience:</span>
+                  <span class="ms-2">{{ provider.years_of_experience }} years</span>
+                </div>
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-map-marker-alt me-2 text-primary"></i>
+                  <span class="fw-medium">Location:</span>
+                  <span class="ms-2">{{ provider.city }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Card Footer -->
+      <div class="card-footer bg-transparent border-top-0 py-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <button type="button" onclick="window.history.back()" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Back
+          </button>
+          <button type="submit" class="btn btn-success">
+            Confirm Booking
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

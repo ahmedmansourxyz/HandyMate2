@@ -1,0 +1,96 @@
+{% extends 'core/base.html' %}
+{% load static custom_filters review_extras %}
+{% block content %}
+<div class="container my-5">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">Professional Providers for {{ service_category }}</h2>
+    <p class="lead text-muted">
+      {% if task == "all" or not task %}
+        Showing all providers offering services in {{ service_category }}.
+      {% else %}
+        Showing providers for task: {{ task|get_task_display:service_category }}.
+      {% endif %}
+    </p>
+  </div>
+  <div class="row">
+    {% if providers %}
+      {% for provider in providers %}
+        <div class="col-md-4 mb-4">
+          <div class="card h-100" style="cursor:default;">
+            {% if provider.profile_image and provider.profile_image.name != 'default_profile.png' %}
+              <img src="{{ provider.profile_image.url }}" class="card-img-top" alt="{{ provider.user.username }}" style="height:200px; object-fit:cover;">
+            {% else %}
+              <img src="{% static 'core/images/default_profile.png' %}" class="card-img-top" alt="Default Profile" style="height:200px; object-fit:cover;">
+            {% endif %}
+            <div class="card-body">
+              <h5 class="card-title">{{ provider.first_name|default:provider.user.username }}</h5>
+              <p class="card-text">
+                <strong>Experience:</strong> {{ provider.years_of_experience }} years<br>
+                <strong>Rating:</strong> {{ provider.rating|star_rating }}
+              </p>
+              <div class="d-flex justify-content-between">
+                {% if task and task != "all" %}
+                  <a href="{% url 'book_service_wizard_with_service' provider.id service_category task %}" class="btn btn-success btn-sm">Book Now</a>
+                {% else %}
+                  <a href="{% url 'book_service_wizard' provider.id service_category %}" class="btn btn-success btn-sm">Book Now</a>
+                {% endif %}
+                <button type="button" class="btn btn-info btn-sm view-details" data-provider-id="{{ provider.id }}">View Details</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="col-12">
+        <p class="text-muted">No providers found for this service.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Provider Details Modal Placeholder -->
+<div class="modal fade" id="providerModal" tabindex="-1" aria-labelledby="providerModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" id="providerModalContent">
+      <!-- Modal content will be loaded here via Ajax -->
+    </div>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  // Attach click handler to all "View Details" buttons
+  document.querySelectorAll('.view-details').forEach(function(button) {
+    button.addEventListener('click', function() {
+      var providerId = this.getAttribute('data-provider-id');
+      fetch(`/provider/${providerId}/modal/`)
+        .then(response => response.text())
+        .then(html => {
+          document.getElementById('providerModalContent').innerHTML = html;
+          var providerModalElement = document.getElementById('providerModal');
+          var providerModal = new bootstrap.Modal(providerModalElement);
+          providerModal.show();
+
+          providerModalElement.addEventListener('hidden.bs.modal', function () {
+            // Remove focus from any element within the modal
+            if (document.activeElement) {
+              document.activeElement.blur();
+            }
+            // Remove any lingering modal backdrop elements
+            var backdrops = document.getElementsByClassName('modal-backdrop');
+            while(backdrops.length > 0) {
+              backdrops[0].parentNode.removeChild(backdrops[0]);
+            }
+            // Remove the modal-open class from the body to re-enable scrolling
+            document.body.classList.remove('modal-open');
+          });
+        })
+        .catch(error => console.error('Error loading provider details:', error));
+    });
+  });
+});
+</script>
+{% endblock %}
+
+{% endblock %}

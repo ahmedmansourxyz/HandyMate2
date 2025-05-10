@@ -1,0 +1,203 @@
+/* style.css */
+
+/* Global Styles */
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: #f0f2f5;
+  color: #333;
+  transition: background-color 0.3s ease;
+}
+
+/* Custom Navbar */
+.custom-navbar {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+.custom-navbar .navbar-brand {
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+.custom-navbar .nav-link {
+  font-weight: 500;
+  margin-right: 1rem;
+  transition: color 0.3s ease;
+}
+.custom-navbar .nav-link:hover {
+  color: #ffdd57;
+}
+
+/* Main Content Area */
+.content-area {
+  background-color: #fff;
+  border-radius: 0.5rem;
+  padding: 2rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Footer */
+.custom-footer {
+  background-color: #343a40;
+  color: #ccc;
+  font-size: 0.9rem;
+  border-top: 3px solid #007bff;
+}
+
+/* Card Styling */
+.card {
+  border: none;
+  border-radius: 0.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Form Controls */
+.form-control,
+.form-select {
+  border-radius: 0.25rem;
+  border: 1px solid #ced4da;
+  transition: border-color 0.3s ease;
+}
+.form-control:focus,
+.form-select:focus {
+  border-color: #007bff;
+  box-shadow: none;
+}
+
+/* Buttons */
+.btn-primary, 
+.btn-info, 
+.btn-success, 
+.btn-danger {
+  border: none;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+.btn-primary:hover, 
+.btn-info:hover, 
+.btn-success:hover, 
+.btn-danger:hover {
+  transform: translateY(-2px);
+}
+
+/* Alerts */
+.alert {
+  border-radius: 0.25rem;
+}
+
+/* Hero Section Styling */
+.hero-section {
+  position: relative;
+  overflow: hidden;
+  background: url('https://picsum.photos/1600/600?grayscale') no-repeat center center;
+  background-size: cover;
+  padding: 5rem 1rem;
+  margin-bottom: 2rem;
+}
+.hero-section .mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.hero-section .content {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  text-align: center;
+}
+
+/* Fade-in Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  opacity: 0;
+  animation: fadeIn 0.8s ease-out forwards;
+}
+.delay-1 {
+  animation-delay: 0.3s;
+}
+.delay-2 {
+  animation-delay: 0.6s;
+}
+
+/* Utility Class for Text Glow */
+.text-glow {
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+
+/* Responsive Container */
+@media (min-width: 992px) {
+  .container {
+    max-width: 960px;
+  }
+}
+
+/* Booking Wizard Card Styling */
+.wizard-card {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin: 2rem auto;
+  max-width: 900px;
+}
+.wizard-card .card-header {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: #fff;
+  text-align: center;
+  padding: 1.5rem;
+}
+.wizard-card .card-header h2 {
+  font-size: 2rem;
+  margin-bottom: 0.25rem;
+}
+.wizard-card .card-header small {
+  color: rgba(255, 255, 255, 0.8);
+}
+.wizard-card .card-body {
+  padding: 2rem;
+}
+.wizard-card .card-footer {
+  background: #f8f9fa;
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+/* Custom notifications dropdown */
+.dropdown-menu {
+  border: none;
+  border-radius: 8px;
+  overflow: hidden;
+  animation: fadeIn 0.3s ease-in-out;
+}
+.dropdown-header {
+  padding: 0.75rem 1rem;
+  background-color: #f8f9fa;
+  font-size: 0.9rem;
+}
+.list-group-item {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.list-group-item:hover {
+  background-color: #f1f1f1;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

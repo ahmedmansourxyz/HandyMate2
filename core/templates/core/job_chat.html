@@ -1,0 +1,19 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<h2>Chat for {{ job.title }}</h2>
+<div class="border p-3" style="height:300px; overflow-y:auto;">
+    {% for msg in messages_list %}
+        <div {% if msg.sender == user.profile %} class="text-end" {% endif %}>
+            <strong>{{ msg.sender.user.username }}:</strong> {{ msg.message }} <br/>
+            <small class="text-muted">{{ msg.timestamp }}</small>
+        </div>
+        <hr>
+    {% endfor %}
+</div>
+
+<form method="POST" class="mt-2">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Send</button>
+</form>
+{% endblock %}

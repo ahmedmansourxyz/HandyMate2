@@ -1,0 +1,823 @@
+{% extends 'core/base.html' %}
+{% load static humanize %}
+{% block content %}
+<style>
+  /* Global Animation */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  /* Highlight animation for new active job card */
+  @keyframes highlightAnimation {
+    0% { background-color: #ffffcc; }
+    100% { background-color: transparent; }
+  }
+  .highlighted {
+    animation: highlightAnimation 2s ease-out;
+  }
+  /* Dashboard Header and Summary Cards */
+  .dashboard-header {
+    margin: 2rem 0;
+    text-align: center;
+    animation: fadeIn 0.8s ease-out;
+  }
+  .summary-card {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    padding: 1.5rem;
+    text-align: center;
+    background-color: #fff;
+  }
+  .summary-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+  }
+  .summary-card h4 {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+  .summary-card p {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #2563eb;
+  }
+  /* Section Cards (Bookings, Services, Jobs) */
+  .section-card {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    background-color: #fff;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .section-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+  }
+  .section-card .card-header {
+    background-color: #2563eb;
+    color: #fff;
+    padding: 1rem;
+    font-size: 1.2rem;
+  }
+  .section-card .card-body {
+    padding: 1.5rem;
+  }
+  /* Modal adjustments for clarity */
+  .modal-header {
+    background-color: #2563eb;
+    color: #fff;
+    border-bottom: none;
+  }
+  .modal-content {
+    border-radius: 10px;
+    overflow: hidden;
+  }
+</style>
+
+<div class="container">
+  <!-- Dashboard Header with Summary Cards -->
+  <div class="dashboard-header">
+    <h1 class="display-5 fw-bold">Provider Dashboard</h1>
+    <p class="lead text-muted">
+      Welcome, {{ request.user.first_name|default:request.user.username }}! Here's a quick overview.
+    </p>
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <div class="summary-card">
+          <h4>Pending Bookings</h4>
+          <p id="pendingCount">{{ pending_bookings|length }}</p>
+        </div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <div class="summary-card">
+          <h4>Your Services</h4>
+          <p id="servicesCount">{{ services|length }}</p>
+        </div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <div class="summary-card">
+          <h4>Active Jobs</h4>
+          <p id="activeCount">{{ active_jobs|length }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Dashboard Sections -->
+  <div class="row">
+    <!-- Pending Bookings Section -->
+    <div class="col-lg-6 mb-4">
+      <div class="card section-card">
+        <div class="card-header">
+          <i class="fas fa-calendar-check me-2"></i>Pending Bookings
+        </div>
+        <div class="card-body" id="pendingBookingsContainer">
+          {% if pending_bookings %}
+            {% for item in pending_bookings %}
+              {% with job=item.job %}
+              <div class="booking-item mb-3 p-3 border rounded" data-jobid="{{ job.id }}">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h5 class="mb-1">{{ job.task }}</h5>
+                    <small class="text-muted">{{ job.category }}</small>
+                  </div>
+                  <small class="text-muted">{{ job.created_at|timesince }} ago</small>
+                </div>
+                <div class="mt-2">
+                  <strong>Booked by:</strong> {{ job.client.user.username }}
+                  <button class="btn btn-sm btn-outline-info view-client-btn"
+                          data-bs-toggle="modal"
+                          data-bs-target="#clientInfoModal"
+                          data-client-username="{{ job.client.user.username }}"
+                          data-client-email="{{ job.client.user.email }}"
+                          data-client-phone="{{ job.client.phone_number }}"
+                          data-client-address="{{ job.client.address }}"
+                          data-client-city="{{ job.client.city }}"
+                          data-client-pic="{% if job.client.profile_image %}{{ job.client.profile_image.url }}{% else %}{% static 'core/images/default_profile.png' %}{% endif %}">
+                    <i class="fas fa-user"></i> View Profile
+                  </button>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <span class="badge bg-secondary me-2">
+                      <i class="fas fa-euro-sign me-1"></i>{{ item.earnings|default:"N/A" }}
+                    </span>
+                    <span class="badge bg-info">
+                      <i class="fas fa-clock me-1"></i>
+                      {% if job.scheduled_date %}
+                        {{ job.scheduled_date|date:"M d, Y, H:i" }}
+                      {% else %}
+                        Not scheduled
+                      {% endif %}
+                    </span>
+                  </div>
+                  <button class="btn btn-sm btn-outline-primary" 
+                          data-bs-toggle="modal" 
+                          data-bs-target="#bookingDetailModal"
+                          data-task="{{ job.task }}"
+                          data-category="{{ job.category }}"
+                          data-created="{{ job.created_at|timesince }} ago"
+                          data-scheduled="{% if job.scheduled_date %}{{ job.scheduled_date|date:'M d, Y, H:i' }}{% else %}Not scheduled{% endif %}"
+                          data-client="{{ job.client.user.username }}"
+                          data-price="{{ item.earnings|default:'N/A' }}"
+                          data-note="{{ job.note }}"
+                          data-jobid="{{ job.id }}">
+                    <i class="fas fa-eye me-1"></i> Details
+                  </button>
+                </div>
+              </div>
+              {% endwith %}
+            {% endfor %}        
+          {% else %}
+            <div class="alert alert-info text-center">No pending bookings available.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Your Services Section -->
+    <div class="col-lg-6 mb-4">
+      <div class="card section-card">
+        <div class="card-header">
+          <i class="fas fa-tools me-2"></i>Your Services
+        </div>
+        <div class="card-body" id="servicesContainer">
+          {% if services %}
+            {% for service in services %}
+              <div class="service-item mb-3 p-3 border rounded" id="service-{{ service.id }}">
+                <div class="d-flex flex-column">
+                  <h5 class="mb-1">{{ service.full_task_display }}</h5>
+                  <h6 class="text-muted mb-1">{{ service.get_category_display }}</h6>
+                  <div class="mb-2">
+                    <strong><i class="fas fa-euro-sign me-1"></i>Price:</strong>
+                    <span id="service-price-{{ service.id }}">{{ service.price_rate }}</span>
+                  </div>
+                  <p class="mb-2">{{ service.description|truncatewords:15 }}</p>
+                  <div class="mt-2 text-end">
+                    <a href="#" class="btn btn-sm btn-outline-success edit-price-btn" 
+                       data-service-id="{{ service.id }}">
+                      Edit
+                    </a>
+                    <a href="#" class="btn btn-sm btn-outline-danger delete-service-btn" 
+                       data-service-id="{{ service.id }}">
+                      Delete
+                    </a>
+                    <!-- Toggle button for availability -->
+                    <button type="button" class="btn btn-sm toggle-service-btn {% if service.is_available %}btn-outline-warning{% else %}btn-outline-success{% endif %}" 
+                            data-service-id="{{ service.id }}">
+                      {% if service.is_available %}
+                        Disable
+                      {% else %}
+                        Enable
+                      {% endif %}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="alert alert-info text-center">No services added yet.</div>
+          {% endif %}
+        </div>
+        <div class="card-footer bg-light text-end">
+          <a href="{% url 'add_service' %}" class="btn btn-lg btn-success">
+            <i class="fas fa-plus me-2"></i>Add New Service
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Jobs Section -->
+  <div class="row">
+    <div class="col">
+      <div class="card section-card">
+        <div class="card-header bg-secondary text-white">
+          <i class="fas fa-tasks me-2"></i>Active Jobs
+        </div>
+        <div class="card-body" id="activeJobsContainer">
+          {% if active_jobs %}
+            {% for job in active_jobs %}
+              <div class="card mb-3 job-card" data-jobid="{{ job.id }}">
+                <div class="card-body">
+                  <div class="d-flex align-items-center mb-2">
+                    {% if job.client.profile_image %}
+                      <img src="{{ job.client.profile_image.url }}" 
+                           alt="{{ job.client.user.username }}" 
+                           class="rounded-circle me-3" 
+                           style="width:50px; height:50px; object-fit:cover;">
+                    {% else %}
+                      <img src="{% static 'core/images/default_profile.png' %}" 
+                           alt="{{ job.client.user.username }}" 
+                           class="rounded-circle me-3" 
+                           style="width:50px; height:50px; object-fit:cover;">
+                    {% endif %}                
+                    <div>
+                      <h5 class="mb-0">{{ job.task }}</h5>
+                      <small class="text-muted">{{ job.category }}</small>
+                    </div>
+                  </div>
+                  <p class="mb-1"><strong>Client:</strong> {{ job.client.user.username }}</p>
+                  {% if job.note %}
+                    <p class="mb-1"><strong>Note:</strong> {{ job.note|truncatewords:12 }}</p>
+                  {% endif %}
+                  <div class="row">
+                    <div class="col-6">
+                      <p class="mb-0"><strong>Scheduled:</strong></p>
+                      <p class="mb-0">
+                        {% if job.scheduled_date %}
+                          {{ job.scheduled_date|date:"M d, Y, H:i" }}
+                        {% else %}
+                          <span class="text-muted">Not scheduled</span>
+                        {% endif %}
+                      </p>
+                    </div>
+                    <div class="col-6 text-end">
+                      <p class="mb-0"><strong>Booked:</strong></p>
+                      <p class="mb-0">{{ job.created_at|timesince }} ago</p>
+                    </div>
+                  </div>
+                  <p class="mb-1 job-duration"><strong>Duration:</strong> {{ job.duration }}</p>
+                </div>
+                <div class="card-footer bg-light d-flex justify-content-between align-items-center">
+                  <div>
+                    <a href="{% url 'job_detail' job.id %}" class="btn btn-sm btn-outline-primary">
+                      <i class="fas fa-eye me-1"></i>Details
+                    </a>
+                  </div>
+                  <div>
+                    <button class="btn btn-sm btn-outline-info view-client-btn" 
+                            data-bs-toggle="modal"
+                            data-bs-target="#clientInfoModal"
+                            data-client-username="{{ job.client.user.username }}"
+                            data-client-email="{{ job.client.user.email }}"
+                            data-client-phone="{{ job.client.phone_number }}"
+                            data-client-address="{{ job.client.address }}"
+                            data-client-city="{{ job.client.city }}"
+                            data-client-pic="{% if job.client.profile_image %}{{ job.client.profile_image.url }}{% else %}{% static 'core/images/default_profile.png' %}{% endif %}">
+                      <i class="fas fa-user"></i> Profile
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning update-duration-btn ms-2" data-job-id="{{ job.id }}">
+                      <i class="fas fa-clock me-1"></i>Update Duration
+                    </button>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="alert alert-info text-center">No active jobs.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Price Modal -->
+<div class="modal fade" id="editPriceModal" tabindex="-1" aria-labelledby="editPriceModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="editPriceForm">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title" id="editPriceModalLabel">Edit Service Price</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="editServiceId" name="service_id">
+          <div class="mb-3">
+            <label for="newPrice" class="form-label">New Price (EUR)</label>
+            <input type="number" step="0.01" class="form-control" id="newPrice" name="price_rate" required>
+          </div>
+          <div id="editPriceError" class="text-danger"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Save changes</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Service Modal -->
+<div class="modal fade" id="deleteServiceModal" tabindex="-1" aria-labelledby="deleteServiceModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="deleteServiceForm">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteServiceModalLabel">Delete Service</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="deleteServiceId" name="service_id">
+          <p>Are you sure you want to delete this service?</p>
+          <div id="deleteServiceError" class="text-danger"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-danger">Delete</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Update Duration Modal -->
+<div class="modal fade" id="updateDurationModal" tabindex="-1" aria-labelledby="updateDurationModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="updateDurationForm">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title" id="updateDurationModalLabel">Update Job Duration</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">New Duration</label>
+            <div class="input-group">
+              <input type="number" class="form-control" id="newDurationHours" name="hours" placeholder="Hours" min="0">
+              <input type="number" class="form-control" id="newDurationMinutes" name="minutes" placeholder="Minutes" min="0" max="59">
+            </div>
+          </div>
+          <div id="updateDurationError" class="text-danger"></div>
+        </div>
+        <div class="modal-footer">
+          <input type="hidden" id="updateJobId" name="job_id" value="">
+          <button type="submit" class="btn btn-success">Save changes</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Booking Detail Modal (includes Note) -->
+<div class="modal fade" id="bookingDetailModal" tabindex="-1" aria-labelledby="bookingDetailModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white py-3">
+        <h5 class="modal-title" id="bookingDetailModalLabel">Booking Details</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <dl class="row">
+          <dt class="col-sm-4">Task:</dt>
+          <dd class="col-sm-8" id="modal-task"></dd>
+          <dt class="col-sm-4">Category:</dt>
+          <dd class="col-sm-8" id="modal-category"></dd>
+          <dt class="col-sm-4">Client:</dt>
+          <dd class="col-sm-8" id="modal-client"></dd>
+          <dt class="col-sm-4">Created:</dt>
+          <dd class="col-sm-8" id="modal-created"></dd>
+          <dt class="col-sm-4">Scheduled:</dt>
+          <dd class="col-sm-8" id="modal-scheduled"></dd>
+          <dt class="col-sm-4">Price:</dt>
+          <dd class="col-sm-8" id="modal-price"></dd>
+          <dt class="col-sm-4">Note:</dt>
+          <dd class="col-sm-8" id="modal-note"></dd>
+        </dl>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-danger" onclick="declineBooking()">Decline</button>
+        <button type="button" class="btn btn-success" onclick="acceptBooking()">Accept</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Client Info Modal -->
+<div class="modal fade" id="clientInfoModal" tabindex="-1" aria-labelledby="clientInfoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white py-3">
+        <h5 class="modal-title" id="clientInfoModalLabel">Client Information</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex align-items-center mb-3">
+          <img src="" id="clientProfilePic" alt="Client Profile Picture" class="rounded-circle me-3" style="width:60px; height:60px;">
+          <div>
+            <p><strong>Username:</strong> <span id="clientUsername"></span></p>
+            <p><strong>Email:</strong> <span id="clientEmail"></span></p>
+          </div>
+        </div>
+        <p><strong>Phone:</strong> <span id="clientPhone"></span></p>
+        <p><strong>Address:</strong> <span id="clientAddress"></span></p>
+        <p><strong>City:</strong> <span id="clientCity"></span></p>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+  // Populate Booking Detail Modal
+  document.addEventListener('DOMContentLoaded', function() {
+    const bookingModal = document.getElementById('bookingDetailModal');
+    bookingModal.addEventListener('show.bs.modal', function(event) {
+      const button = event.relatedTarget;
+      bookingModal.dataset.currentJobId = button.getAttribute('data-jobid');
+      document.getElementById('modal-task').textContent = button.dataset.task;
+      document.getElementById('modal-category').textContent = button.dataset.category;
+      document.getElementById('modal-client').textContent = button.dataset.client;
+      document.getElementById('modal-created').textContent = button.dataset.created;
+      document.getElementById('modal-scheduled').textContent = button.dataset.scheduled;
+      document.getElementById('modal-price').textContent = button.dataset.price;
+      document.getElementById('modal-note').textContent = button.dataset.note;
+    });
+
+    // Populate Client Info Modal
+    const clientModal = document.getElementById('clientInfoModal');
+    var defaultProfilePic = "{% static 'core/images/default_profile.png' %}";
+    clientModal.addEventListener('show.bs.modal', function(event) {
+      const button = event.relatedTarget;
+      document.getElementById('clientUsername').textContent = button.getAttribute('data-client-username') || 'N/A';
+      document.getElementById('clientEmail').textContent = button.getAttribute('data-client-email') || 'N/A';
+      document.getElementById('clientPhone').textContent = button.getAttribute('data-client-phone') || 'N/A';
+      document.getElementById('clientAddress').textContent = button.getAttribute('data-client-address') || 'N/A';
+      document.getElementById('clientCity').textContent = button.getAttribute('data-client-city') || 'N/A';
+      const pic = button.getAttribute('data-client-pic') || defaultProfilePic;
+      document.getElementById('clientProfilePic').setAttribute('src', pic);
+    });
+  });
+
+  // CSRF helper
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  // Booking Actions (Accept/Decline)
+  function handleBookingAction(action) {
+    const modal = document.getElementById('bookingDetailModal');
+    const jobId = modal.dataset.currentJobId;
+    const csrftoken = getCookie('csrftoken');
+
+    fetch(`/job/${jobId}/${action}/`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrftoken,
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Remove pending booking from list
+        const pendingBooking = document.querySelector(`[data-jobid="${jobId}"]`);
+        if (pendingBooking) {
+          const bookingElement = pendingBooking.closest('.booking-item');
+          if (bookingElement) {
+            bookingElement.remove();
+            const pendingCount = document.getElementById('pendingCount');
+            pendingCount.textContent = parseInt(pendingCount.textContent) - 1;
+            const pendingBookingsContainer = document.getElementById('pendingBookingsContainer');
+            if (!pendingBookingsContainer.querySelector('.booking-item')) {
+              pendingBookingsContainer.innerHTML = '<div class="alert alert-info text-center">No pending bookings available.</div>';
+            }
+          }
+        }
+
+        // If accepted, add new active job to list
+        if (action === 'accept' && data.job) {
+          const activeContainer = document.getElementById('activeJobsContainer');
+          const noJobsAlert = activeContainer.querySelector('.alert-info');
+          if (noJobsAlert) noJobsAlert.remove();
+
+          const jobHTML = `
+            <div class="card mb-3 job-card highlighted" data-jobid="${data.job.id}">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                  <img src="${data.job.client_profile_image}" 
+                       alt="${data.job.client_username}" 
+                       class="rounded-circle me-3" 
+                       style="width:50px; height:50px; object-fit:cover;">
+                  <div>
+                    <h5 class="mb-0">${data.job.task}</h5>
+                    <small class="text-muted">${data.job.category}</small>
+                  </div>
+                </div>
+                <p class="mb-1"><strong>Client:</strong> ${data.job.client_username}</p>
+                <div class="row">
+                  <div class="col-6">
+                    <p class="mb-0"><strong>Scheduled:</strong></p>
+                    <p class="mb-0">${data.job.formatted_scheduled}</p>
+                  </div>
+                  <div class="col-6 text-end">
+                    <p class="mb-0"><strong>Booked:</strong></p>
+                    <p class="mb-0">${data.job.formatted_created}</p>
+                  </div>
+                </div>
+                <p class="mb-1 job-duration"><strong>Duration:</strong> ${data.job.duration}</p>
+              </div>
+              <div class="card-footer bg-light d-flex justify-content-between align-items-center">
+                <div>
+                  <a href="/job/${data.job.id}/" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-eye me-1"></i>Details
+                  </a>
+                </div>
+                <div>
+                  <button class="btn btn-sm btn-outline-info view-client-btn" 
+                          data-bs-toggle="modal"
+                          data-bs-target="#clientInfoModal"
+                          data-client-username="${data.job.client_username}"
+                          data-client-email="${data.job.client_email}"
+                          data-client-phone="${data.job.client_phone}"
+                          data-client-address="${data.job.client_address}"
+                          data-client-city="${data.job.client_city}"
+                          data-client-pic="${data.job.client_profile_image}">
+                    <i class="fas fa-user"></i> Profile
+                  </button>
+                  <button class="btn btn-sm btn-outline-warning update-duration-btn ms-2" data-job-id="${data.job.id}">
+                    <i class="fas fa-clock me-1"></i>Update Duration
+                  </button>
+                </div>
+              </div>
+            </div>`;
+          activeContainer.insertAdjacentHTML('afterbegin', jobHTML);
+          const activeCount = document.getElementById('activeCount');
+          activeCount.textContent = parseInt(activeCount.textContent) + 1;
+          const newJobCard = activeContainer.querySelector(`.job-card[data-jobid="${data.job.id}"]`);
+          if(newJobCard) {
+            newJobCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => newJobCard.classList.remove('highlighted'), 2000);
+          }
+        }
+
+        showToast(data.message, 'success');
+        bootstrap.Modal.getInstance(modal).hide();
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('An error occurred');
+    });
+  }
+  function acceptBooking() { handleBookingAction('accept'); }
+  function declineBooking() { handleBookingAction('decline'); }
+
+  // Edit Price Functionality
+  document.addEventListener("DOMContentLoaded", function(){
+    // Update the modal input each time the edit button is clicked by reading current displayed price
+    document.querySelectorAll('.edit-price-btn').forEach(button => {
+      button.addEventListener('click', function(e){
+        e.preventDefault();
+        const serviceId = this.dataset.serviceId;
+        document.getElementById('editServiceId').value = serviceId;
+        // Read current price from displayed element
+        const priceElem = document.getElementById('service-price-' + serviceId);
+        const currentPrice = priceElem ? priceElem.textContent.trim() : this.dataset.currentPrice;
+        document.getElementById('newPrice').value = currentPrice;
+        // Update data-current-price attribute with the latest price
+        this.dataset.currentPrice = currentPrice;
+        document.getElementById('editPriceError').textContent = "";
+        new bootstrap.Modal(document.getElementById('editPriceModal')).show();
+      });
+    });
+    document.getElementById('editPriceForm').addEventListener('submit', function(e){
+      e.preventDefault();
+      const serviceId = document.getElementById('editServiceId').value;
+      const newPrice = document.getElementById('newPrice').value;
+      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+      fetch(`/ajax/service/${serviceId}/update/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrfToken },
+        body: new URLSearchParams({ price_rate: newPrice })
+      }).then(response => response.json())
+        .then(data => {
+          if(data.success){
+            document.getElementById(`service-price-${serviceId}`).textContent = data.new_price;
+            // Also update the data attribute on the edit button so that modal will show updated price next time.
+            const editBtn = document.querySelector(`.edit-price-btn[data-service-id="${serviceId}"]`);
+            if(editBtn) {
+              editBtn.dataset.currentPrice = data.new_price;
+            }
+            bootstrap.Modal.getInstance(document.getElementById('editPriceModal')).hide();
+            showToast(data.message, 'success');
+          } else {
+            document.getElementById('editPriceError').textContent = data.error;
+          }
+        }).catch(error => {
+          console.error("Error:", error);
+          document.getElementById('editPriceError').textContent = "An error occurred.";
+        });
+    });
+  
+    // Delete Service Functionality
+    document.querySelectorAll('.delete-service-btn').forEach(button => {
+      button.addEventListener('click', function(e){
+        e.preventDefault();
+        document.getElementById('deleteServiceId').value = this.dataset.serviceId;
+        document.getElementById('deleteServiceError').textContent = "";
+        new bootstrap.Modal(document.getElementById('deleteServiceModal')).show();
+      });
+    });
+    document.getElementById('deleteServiceForm').addEventListener('submit', function(e){
+      e.preventDefault();
+      const serviceId = document.getElementById('deleteServiceId').value;
+      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+      fetch(`/ajax/service/${serviceId}/delete/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken }
+      }).then(response => response.json())
+        .then(data => {
+          if(data.success){
+            const elem = document.getElementById(`service-${serviceId}`);
+            if(elem) { elem.remove(); }
+            if(document.querySelectorAll('.service-item').length === 0){
+              document.getElementById('servicesContainer').innerHTML =
+                '<div class="alert alert-info text-center">No services added yet.</div>';
+            }
+            bootstrap.Modal.getInstance(document.getElementById('deleteServiceModal')).hide();
+            showToast(data.message, 'success');
+          } else {
+            document.getElementById('deleteServiceError').textContent = data.error;
+          }
+        }).catch(error => {
+          console.error("Error:", error);
+          document.getElementById('deleteServiceError').textContent = "An error occurred.";
+        });
+    });
+
+    // Toggle Service Availability via AJAX
+    document.querySelectorAll('.toggle-service-btn').forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        const serviceId = this.getAttribute('data-service-id');
+        const csrftoken = getCookie('csrftoken');
+        fetch(`/services/${serviceId}/toggle/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken,
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if(data.success) {
+            showToast(data.message, 'success');
+            if(data.new_state) {
+              this.classList.remove('btn-outline-success');
+              this.classList.add('btn-outline-warning');
+              this.textContent = 'Disable';
+            } else {
+              this.classList.remove('btn-outline-warning');
+              this.classList.add('btn-outline-success');
+              this.textContent = 'Enable';
+            }
+          } else {
+            showToast(data.error, 'danger');
+          }
+        })
+        .catch(error => {
+          console.error("Error:", error);
+          showToast("An error occurred", 'danger');
+        });
+      });
+    });
+
+    // Update Duration Modal Functionality
+    document.addEventListener('click', function(e) {
+      const updateBtn = e.target.closest('.update-duration-btn');
+      if (updateBtn) {
+        const jobId = updateBtn.getAttribute('data-job-id');
+        document.getElementById('updateJobId').value = jobId;
+        document.getElementById('newDurationHours').value = '';
+        document.getElementById('newDurationMinutes').value = '';
+        document.getElementById('updateDurationError').textContent = '';
+        new bootstrap.Modal(document.getElementById('updateDurationModal')).show();
+      }
+    });
+
+    document.getElementById('updateDurationForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const jobId = document.getElementById('updateJobId').value;
+      const hours = document.getElementById('newDurationHours').value;
+      const minutes = document.getElementById('newDurationMinutes').value;
+      const paddedHours = String(hours).padStart(2, '0');
+      const paddedMinutes = String(minutes).padStart(2, '0');
+      const durationStr = `${paddedHours}:${paddedMinutes}:00`;
+      const csrftoken = getCookie('csrftoken');
+      
+      fetch(`/job/${jobId}/update_duration/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrftoken,
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ duration: durationStr })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showToast(data.message, 'success');
+          bootstrap.Modal.getInstance(document.getElementById('updateDurationModal')).hide();
+          const jobCard = document.querySelector(`.job-card[data-jobid="${jobId}"]`);
+          if(jobCard) {
+            const durationElem = jobCard.querySelector('.job-duration');
+            if(durationElem) {
+              durationElem.innerHTML = `<strong>Duration:</strong> ${data.new_duration}`;
+            }
+          }
+        } else {
+          document.getElementById('updateDurationError').textContent = data.error || 'An error occurred.';
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('updateDurationError').textContent = 'An error occurred.';
+      });
+    });
+     // Check URL parameters for new_service_id.
+    const params = new URLSearchParams(window.location.search);
+    const newServiceId = params.get('new_service_id');
+    if(newServiceId) {
+      // Try to locate the service element by its id (ensure your service item has id="service-{{ service.id }}").
+      const newServiceElem = document.getElementById(`service-${newServiceId}`);
+      if(newServiceElem) {
+        // Scroll it into view and add the highlight animation.
+        newServiceElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        newServiceElem.classList.add('highlighted');
+        // Remove the highlight after 2 seconds.
+        setTimeout(() => newServiceElem.classList.remove('highlighted'), 2000);
+      }
+    }
+  });
+  // Update dashboard counters without page reload
+  function updateDashboardCounts() {
+    fetch("{% url 'dashboard_counts' %}")
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('pendingCount').textContent = data.pending_bookings;
+        document.getElementById('servicesCount').textContent = data.services;
+        document.getElementById('activeCount').textContent = data.active_jobs;
+      })
+      .catch(error => console.error("Error updating dashboard counts:", error));
+  }
+  setInterval(updateDashboardCounts, 1000);
+</script>
+{% endblock %}
+

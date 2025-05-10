@@ -1,0 +1,45 @@
+{% load review_extras %}
+{% load static %}
+
+<div class="modal-header">
+  <h5 class="modal-title">{{ provider.first_name|default:provider.user.username }}'s Profile</h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+  <div class="d-flex mb-3">
+    {% if provider.profile_image %}
+      <img src="{{ provider.profile_image.url }}" alt="Profile Picture" class="rounded-circle me-3" style="width:80px; height:80px; object-fit:cover;">
+    {% else %}
+      <img src="{% static 'core/images/default_profile.png' %}" alt="Default Profile" class="rounded-circle me-3" style="width:80px; height:80px; object-fit:cover;">
+    {% endif %}
+    <div>
+      <p><strong>Name:</strong> {{ provider.first_name }} {{ provider.last_name }}</p>
+      <p><strong>Location:</strong> {{ provider.city }}</p>
+      <p><strong>Completed Jobs:</strong> {{ provider.completed_jobs }}</p>
+      <p><strong>Rating:</strong> {{ provider.rating|star_rating }}</p>
+      {% if provider.years_of_experience %}
+        <p><strong>Experience:</strong> {{ provider.years_of_experience }} years</p>
+      {% endif %}
+    </div>
+  </div>
+  <hr>
+  <h6>Reviews</h6>
+  {% if provider.reviews_received.all %}
+    <div class="list-group">
+      {% for review in provider.reviews_received.all %}
+        <div class="list-group-item">
+          <div class="d-flex justify-content-between">
+            <span>{{ review.rating|star_rating }}</span>
+            <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+          </div>
+          <p class="mb-0">{{ review.comment|default:"No comment provided." }}</p>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-muted">No reviews yet.</p>
+  {% endif %}
+</div>
+<div class="modal-footer">
+  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+</div>
